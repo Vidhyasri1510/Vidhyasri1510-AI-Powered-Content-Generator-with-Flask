@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat App</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@10.7.2/lib/languages/python.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/a11y-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+</head>
+<body>
+  <div class="container mt-5">
+    <h1 style="color:white">Chat Bot</h1>
+    <div class="form-group mt-3">
+      <label for="theme">Theme:</label>
+      <input type="text" class="form-control" id="theme" placeholder="Enter theme">
+    </div>
+    <div class="form-group mt-3">
+      <label for="topic">Topic:</label>
+      <input type="text" class="form-control" id="topic" placeholder="Enter topic">
+    </div>
+    <button type="button" class="btn btn-primary" id="generate-btn">Generate</button>
+    <div class="chat-box mt-3"></div>
+  </div>
+
+  <script>
+    setInterval(() => {
+      document.querySelectorAll("pre code").forEach(block => {
+        hljs.highlightBlock(block);
+      });
+    }, 1000);
+
+    const chatBox = document.querySelector(".chat-box");
+    const themeInput = document.querySelector("#theme");
+    const topicInput = document.querySelector("#topic");
+    const generateBtn = document.querySelector("#generate-btn");
+
+    function addMessage(message, isUser) {
+      const messageDiv = document.createElement("div");
+      messageDiv.classList.add("mt-3", "p-3", "rounded", isUser ? "user-message" : "bot-message");
+      messageDiv.innerHTML = `<p>${message}</p>`;
+      chatBox.appendChild(messageDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function generateContent() {
+      const theme = themeInput.value.trim();
+      const topic = topicInput.value.trim();
+      if (theme && topic) {
+        addMessage(`Generating content for theme: ${theme} and topic: ${topic}`, true); // Add user's message to the chat box
+
+        fetch("/api", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ theme, topic })
+        })
+        .then(response => response.json())  // Parse response as JSON
+        .then(data => {
+          const content = data.content;     // Extract content from response JSON
+
+          const formattedContent = content.includes("```") ?
+            content.replace(/```([\s\S]+?)```/g, '</p><pre><code>$1</code></pre><p>') :
+            content;
+
+          addMessage(formattedContent, false);
+        })
+        .catch(error => console.error(error));
+      }
+    }
+
+    generateBtn.addEventListener("click", generateContent);
+  </script>
+  <style>
+    body {
+      background-color: #343a40;
+      color: white;
+    }
+
+    .chat-box {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 10px;
+      background-color: #fff;
+      color: black;
+    }
+
+    .user-message {
+      background-color: #007bff;
+      color: white;
+      align-self: flex-end;
+    }
+
+    .bot-message {
+      background-color: #f1f1f1;
+      color: black;
+    }
+  </style>
+</body>
+</html>
